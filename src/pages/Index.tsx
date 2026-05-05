@@ -5,6 +5,7 @@ import { StockCard } from "@/components/StockCard";
 import { StockDetail } from "@/components/StockDetail";
 import { CompareDrawer } from "@/components/CompareDrawer";
 import { LiveTickerLookup } from "@/components/LiveTickerLookup";
+import { Watchlist } from "@/components/Watchlist";
 
 const Index = () => {
   const [query, setQuery] = useState("");
@@ -57,6 +58,10 @@ const Index = () => {
 
         <div className="mb-8">
           <LiveTickerLookup />
+        </div>
+
+        <div className="mb-8">
+          <Watchlist />
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">

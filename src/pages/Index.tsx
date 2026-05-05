@@ -4,6 +4,7 @@ import { STOCKS, Stock } from "@/data/stocks";
 import { StockCard } from "@/components/StockCard";
 import { StockDetail } from "@/components/StockDetail";
 import { CompareDrawer } from "@/components/CompareDrawer";
+import { LiveTickerLookup } from "@/components/LiveTickerLookup";
 
 const Index = () => {
   const [query, setQuery] = useState("");
@@ -53,6 +54,10 @@ const Index = () => {
             />
           </div>
         </section>
+
+        <div className="mb-8">
+          <LiveTickerLookup />
+        </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">

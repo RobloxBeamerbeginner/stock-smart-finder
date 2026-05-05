@@ -1,1 +1,10 @@
 project_id = "hdmymylshetmiyqmsomd"
+
+[functions.watchlist-manage]
+verify_jwt = false
+
+[functions.watchlist-scan]
+verify_jwt = false
+
+[functions.finnhub-quote]
+verify_jwt = false

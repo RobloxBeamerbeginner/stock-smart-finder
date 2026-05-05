@@ -14,7 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      watchlist_alerts: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          last_alerted_at: string | null
+          last_news_id: number | null
+          last_price: number | null
+          symbol: string
+          threshold_pct: number
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          last_alerted_at?: string | null
+          last_news_id?: number | null
+          last_price?: number | null
+          symbol: string
+          threshold_pct?: number
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          last_alerted_at?: string | null
+          last_news_id?: number | null
+          last_price?: number | null
+          symbol?: string
+          threshold_pct?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

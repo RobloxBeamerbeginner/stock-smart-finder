@@ -74,9 +74,10 @@ serve(async (req) => {
     if (action === "add") {
       const symbol = String(body.symbol || "").trim().toUpperCase();
       const threshold = Number(body.threshold ?? 3);
+      const direction = ["both","up","down"].includes(body.direction) ? body.direction : "both";
       if (!symbol) throw new Error("symbol required");
       const { error } = await supabase.from("watchlist_alerts").upsert(
-        { email, symbol, threshold_pct: threshold },
+        { email, symbol, threshold_pct: threshold, direction },
         { onConflict: "email,symbol" },
       );
       if (error) throw error;
@@ -95,9 +96,12 @@ serve(async (req) => {
     }
     if (action === "toggle") {
       const symbol = String(body.symbol || "").trim().toUpperCase();
-      const enabled = Boolean(body.enabled);
+      const update: Record<string, unknown> = {};
+      if (typeof body.enabled === "boolean") update.enabled = body.enabled;
+      if (["both","up","down"].includes(body.direction)) update.direction = body.direction;
+      if (Object.keys(update).length === 0) throw new Error("nothing to update");
       const { error } = await supabase.from("watchlist_alerts")
-        .update({ enabled }).eq("email", email).eq("symbol", symbol);
+        .update(update).eq("email", email).eq("symbol", symbol);
       if (error) throw error;
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

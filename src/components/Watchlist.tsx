@@ -4,9 +4,11 @@ import { toast } from "sonner";
 import { Bell, Plus, Trash2, Mail, Loader2, TrendingUp, TrendingDown, Send, AlertTriangle, CheckCircle2, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+type Direction = "both" | "up" | "down";
 interface Alert {
   id: string; email: string; symbol: string; threshold_pct: number;
   last_price: number | null; last_alerted_at: string | null; enabled: boolean;
+  direction: Direction;
 }
 interface LiveQuote {
   symbol: string; price?: number; change?: number; changePercent?: number;
@@ -22,6 +24,7 @@ export const Watchlist = () => {
   const [quotes, setQuotes] = useState<Record<string, LiveQuote>>({});
   const [symbol, setSymbol] = useState("");
   const [threshold, setThreshold] = useState(3);
+  const [direction, setDirection] = useState<Direction>("both");
   const [loading, setLoading] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -113,7 +116,7 @@ export const Watchlist = () => {
     if (!s) { toast.error("Enter a ticker"); return; }
     setLoading(true);
     const { data, error } = await supabase.functions.invoke("watchlist-manage", {
-      body: { action: "add", email: savedEmail, symbol: s, threshold },
+      body: { action: "add", email: savedEmail, symbol: s, threshold, direction },
     });
     setLoading(false);
     if (error || data?.error) { toast.error(data?.error ?? error?.message); return; }
@@ -136,6 +139,15 @@ export const Watchlist = () => {
     });
     if (error) { toast.error("Failed to update"); refresh(savedEmail); return; }
     toast.success(`${sym} alerts ${enabled ? "enabled" : "paused"}`);
+  };
+
+  const setRowDirection = async (sym: string, dir: Direction) => {
+    setItems(prev => prev.map(i => i.symbol === sym ? { ...i, direction: dir } : i));
+    const { error } = await supabase.functions.invoke("watchlist-manage", {
+      body: { action: "toggle", email: savedEmail, symbol: sym, direction: dir },
+    });
+    if (error) { toast.error("Failed to update"); refresh(savedEmail); return; }
+    toast.success(`${sym} alerts on ${dir === "both" ? "any move" : dir + " moves"}`);
   };
 
   const runScanNow = async () => {

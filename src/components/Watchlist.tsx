@@ -303,6 +303,15 @@ export const Watchlist = () => {
                         {it.last_alerted_at && ` · last alert ${new Date(it.last_alerted_at).toLocaleString()}`}
                       </div>
                     </div>
+                    <label className="flex items-center gap-1.5 cursor-pointer select-none" title="Email alerts on/off">
+                      <input
+                        type="checkbox"
+                        checked={it.enabled !== false}
+                        onChange={(e) => toggleAlert(it.symbol, e.target.checked)}
+                        className="h-4 w-4 accent-primary"
+                      />
+                      <span className="text-[11px] text-muted-foreground">Alerts</span>
+                    </label>
                     <button onClick={() => remove(it.symbol)}
                       className="rounded-md p-2 text-muted-foreground hover:bg-secondary hover:text-destructive">
                       <Trash2 className="h-4 w-4" />

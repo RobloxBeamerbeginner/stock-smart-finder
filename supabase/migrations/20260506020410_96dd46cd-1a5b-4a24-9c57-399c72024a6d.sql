@@ -1,0 +1,1 @@
+alter table public.watchlist_alerts add column if not exists enabled boolean not null default true;

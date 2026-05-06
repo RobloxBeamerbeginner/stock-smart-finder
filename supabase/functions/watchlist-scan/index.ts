@@ -49,7 +49,7 @@ serve(async (req) => {
     testEmail = body?.testEmail ?? null;
   } catch {}
 
-  const { data: alerts, error } = await supabase.from("watchlist_alerts").select("*");
+  const { data: alerts, error } = await supabase.from("watchlist_alerts").select("*").eq("enabled", true);
   if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
 
   const results: any[] = [];

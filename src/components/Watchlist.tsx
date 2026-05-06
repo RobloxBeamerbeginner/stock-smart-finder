@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 interface Alert {
   id: string; email: string; symbol: string; threshold_pct: number;
-  last_price: number | null; last_alerted_at: string | null;
+  last_price: number | null; last_alerted_at: string | null; enabled: boolean;
 }
 interface LiveQuote {
   symbol: string; price?: number; change?: number; changePercent?: number;
@@ -129,6 +129,15 @@ export const Watchlist = () => {
     refresh(savedEmail);
   };
 
+  const toggleAlert = async (sym: string, enabled: boolean) => {
+    setItems(prev => prev.map(i => i.symbol === sym ? { ...i, enabled } : i));
+    const { error } = await supabase.functions.invoke("watchlist-manage", {
+      body: { action: "toggle", email: savedEmail, symbol: sym, enabled },
+    });
+    if (error) { toast.error("Failed to update"); refresh(savedEmail); return; }
+    toast.success(`${sym} alerts ${enabled ? "enabled" : "paused"}`);
+  };
+
   const runScanNow = async () => {
     if (!savedEmail) return;
     setScanning(true);
@@ -149,7 +158,7 @@ export const Watchlist = () => {
           <Bell className="h-3.5 w-3.5" />
         </div>
         <h3 className="text-base font-semibold">Watchlist & email alerts</h3>
-        <span className="text-xs text-muted-foreground">live prices · auto-scan every 5 min</span>
+        <span className="text-xs text-muted-foreground">live prices · auto-scan every minute</span>
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -294,6 +303,15 @@ export const Watchlist = () => {
                         {it.last_alerted_at && ` · last alert ${new Date(it.last_alerted_at).toLocaleString()}`}
                       </div>
                     </div>
+                    <label className="flex items-center gap-1.5 cursor-pointer select-none" title="Email alerts on/off">
+                      <input
+                        type="checkbox"
+                        checked={it.enabled !== false}
+                        onChange={(e) => toggleAlert(it.symbol, e.target.checked)}
+                        className="h-4 w-4 accent-primary"
+                      />
+                      <span className="text-[11px] text-muted-foreground">Alerts</span>
+                    </label>
                     <button onClick={() => remove(it.symbol)}
                       className="rounded-md p-2 text-muted-foreground hover:bg-secondary hover:text-destructive">
                       <Trash2 className="h-4 w-4" />

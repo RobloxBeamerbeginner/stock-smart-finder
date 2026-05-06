@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 interface Alert {
   id: string; email: string; symbol: string; threshold_pct: number;
-  last_price: number | null; last_alerted_at: string | null;
+  last_price: number | null; last_alerted_at: string | null; enabled: boolean;
 }
 interface LiveQuote {
   symbol: string; price?: number; change?: number; changePercent?: number;
@@ -127,6 +127,15 @@ export const Watchlist = () => {
       body: { action: "remove", email: savedEmail, symbol: sym },
     });
     refresh(savedEmail);
+  };
+
+  const toggleAlert = async (sym: string, enabled: boolean) => {
+    setItems(prev => prev.map(i => i.symbol === sym ? { ...i, enabled } : i));
+    const { error } = await supabase.functions.invoke("watchlist-manage", {
+      body: { action: "toggle", email: savedEmail, symbol: sym, enabled },
+    });
+    if (error) { toast.error("Failed to update"); refresh(savedEmail); return; }
+    toast.success(`${sym} alerts ${enabled ? "enabled" : "paused"}`);
   };
 
   const runScanNow = async () => {

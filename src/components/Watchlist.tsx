@@ -158,7 +158,7 @@ export const Watchlist = () => {
           <Bell className="h-3.5 w-3.5" />
         </div>
         <h3 className="text-base font-semibold">Watchlist & email alerts</h3>
-        <span className="text-xs text-muted-foreground">live prices · auto-scan every 5 min</span>
+        <span className="text-xs text-muted-foreground">live prices · auto-scan every minute</span>
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">

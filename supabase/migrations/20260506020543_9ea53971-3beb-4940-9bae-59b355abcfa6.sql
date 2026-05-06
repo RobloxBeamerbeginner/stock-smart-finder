@@ -1,0 +1,1 @@
+alter table public.watchlist_alerts add column if not exists direction text not null default 'both' check (direction in ('both','up','down'));

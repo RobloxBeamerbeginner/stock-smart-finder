@@ -17,6 +17,7 @@ export type Database = {
       watchlist_alerts: {
         Row: {
           created_at: string
+          direction: string
           email: string
           enabled: boolean
           id: string
@@ -28,6 +29,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          direction?: string
           email: string
           enabled?: boolean
           id?: string
@@ -39,6 +41,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          direction?: string
           email?: string
           enabled?: boolean
           id?: string

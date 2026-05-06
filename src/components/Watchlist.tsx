@@ -4,9 +4,11 @@ import { toast } from "sonner";
 import { Bell, Plus, Trash2, Mail, Loader2, TrendingUp, TrendingDown, Send, AlertTriangle, CheckCircle2, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+type Direction = "both" | "up" | "down";
 interface Alert {
   id: string; email: string; symbol: string; threshold_pct: number;
   last_price: number | null; last_alerted_at: string | null; enabled: boolean;
+  direction: Direction;
 }
 interface LiveQuote {
   symbol: string; price?: number; change?: number; changePercent?: number;
@@ -22,6 +24,7 @@ export const Watchlist = () => {
   const [quotes, setQuotes] = useState<Record<string, LiveQuote>>({});
   const [symbol, setSymbol] = useState("");
   const [threshold, setThreshold] = useState(3);
+  const [direction, setDirection] = useState<Direction>("both");
   const [loading, setLoading] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -113,7 +116,7 @@ export const Watchlist = () => {
     if (!s) { toast.error("Enter a ticker"); return; }
     setLoading(true);
     const { data, error } = await supabase.functions.invoke("watchlist-manage", {
-      body: { action: "add", email: savedEmail, symbol: s, threshold },
+      body: { action: "add", email: savedEmail, symbol: s, threshold, direction },
     });
     setLoading(false);
     if (error || data?.error) { toast.error(data?.error ?? error?.message); return; }
@@ -136,6 +139,15 @@ export const Watchlist = () => {
     });
     if (error) { toast.error("Failed to update"); refresh(savedEmail); return; }
     toast.success(`${sym} alerts ${enabled ? "enabled" : "paused"}`);
+  };
+
+  const setRowDirection = async (sym: string, dir: Direction) => {
+    setItems(prev => prev.map(i => i.symbol === sym ? { ...i, direction: dir } : i));
+    const { error } = await supabase.functions.invoke("watchlist-manage", {
+      body: { action: "toggle", email: savedEmail, symbol: sym, direction: dir },
+    });
+    if (error) { toast.error("Failed to update"); refresh(savedEmail); return; }
+    toast.success(`${sym} alerts on ${dir === "both" ? "any move" : dir + " moves"}`);
   };
 
   const runScanNow = async () => {
@@ -261,6 +273,18 @@ export const Watchlist = () => {
                 className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Notify on</label>
+              <div className="mt-1 inline-flex rounded-md border border-border bg-background p-0.5">
+                {(["both","up","down"] as Direction[]).map(d => (
+                  <button key={d} type="button" onClick={() => setDirection(d)}
+                    className={cn("px-2.5 py-1.5 text-xs font-medium rounded-[4px] capitalize",
+                      direction === d ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>
+                    {d === "both" ? "Both" : d === "up" ? "Up only" : "Down only"}
+                  </button>
+                ))}
+              </div>
+            </div>
             <button onClick={addTicker} disabled={loading}
               className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
@@ -300,8 +324,21 @@ export const Watchlist = () => {
                       )}
                       <div className="text-[11px] text-muted-foreground">
                         Alert ±{it.threshold_pct}%
+                        {" · "}
+                        {it.direction === "up" ? "up only" : it.direction === "down" ? "down only" : "both"}
                         {it.last_alerted_at && ` · last alert ${new Date(it.last_alerted_at).toLocaleString()}`}
                       </div>
+                    </div>
+                    <div className="inline-flex rounded-md border border-border bg-background p-0.5">
+                      {(["both","up","down"] as Direction[]).map(d => (
+                        <button key={d} type="button" onClick={() => setRowDirection(it.symbol, d)}
+                          title={d === "both" ? "Notify on any move" : d === "up" ? "Only when up" : "Only when down"}
+                          className={cn("px-2 py-1 text-[11px] font-medium rounded-[4px] capitalize flex items-center gap-1",
+                            (it.direction ?? "both") === d ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>
+                          {d === "up" ? <TrendingUp className="h-3 w-3" /> : d === "down" ? <TrendingDown className="h-3 w-3" /> : "↕"}
+                          {d === "both" ? "Both" : d}
+                        </button>
+                      ))}
                     </div>
                     <label className="flex items-center gap-1.5 cursor-pointer select-none" title="Email alerts on/off">
                       <input

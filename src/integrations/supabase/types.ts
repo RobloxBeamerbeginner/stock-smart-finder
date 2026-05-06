@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           created_at: string
           email: string
+          enabled: boolean
           id: string
           last_alerted_at: string | null
           last_news_id: number | null
@@ -28,6 +29,7 @@ export type Database = {
         Insert: {
           created_at?: string
           email: string
+          enabled?: boolean
           id?: string
           last_alerted_at?: string | null
           last_news_id?: number | null
@@ -38,6 +40,7 @@ export type Database = {
         Update: {
           created_at?: string
           email?: string
+          enabled?: boolean
           id?: string
           last_alerted_at?: string | null
           last_news_id?: number | null

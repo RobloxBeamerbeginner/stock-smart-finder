@@ -13,7 +13,7 @@ const supabase = createClient(
 
 const FINNHUB = "https://finnhub.io/api/v1";
 
-async function sendEmail(to: string, subject: string, html: string) {
+async function sendEmail(to: string, subject: string, html: string, from: string) {
   const lk = Deno.env.get("LOVABLE_API_KEY");
   const rk = Deno.env.get("RESEND_API_KEY");
   if (!lk || !rk) throw new Error("Email keys missing");
@@ -25,7 +25,7 @@ async function sendEmail(to: string, subject: string, html: string) {
       "X-Connection-Api-Key": rk,
     },
     body: JSON.stringify({
-      from: "Stock Alerts <onboarding@resend.dev>",
+      from,
       to: [to],
       subject,
       html,
@@ -54,6 +54,16 @@ serve(async (req) => {
 
   const results: any[] = [];
   const symbolCache = new Map<string, any>();
+  const fromCache = new Map<string, string>();
+  async function getFrom(em: string) {
+    if (fromCache.has(em)) return fromCache.get(em)!;
+    const { data } = await supabase.from("watchlist_settings").select("from_name, from_email").eq("email", em).maybeSingle();
+    const f = data
+      ? `${data.from_name} <${data.from_email}>`
+      : "Stock Alerts <onboarding@resend.dev>";
+    fromCache.set(em, f);
+    return f;
+  }
 
   for (const a of alerts ?? []) {
     if (testEmail && a.email !== testEmail) continue;
@@ -89,7 +99,8 @@ serve(async (req) => {
             </table>
             <p style="font-size:12px;color:#64748b;margin-top:20px">Educational only — not financial advice.</p>
           </div>`;
-        const sent = await sendEmail(a.email, `${arrow} ${a.symbol} ${dir} ${movePct.toFixed(2)}%`, html);
+        const from = await getFrom(a.email);
+        const sent = await sendEmail(a.email, `${arrow} ${a.symbol} ${dir} ${movePct.toFixed(2)}%`, html, from);
         if (sent) {
           await supabase.from("watchlist_alerts").update({
             last_price: q.c, last_alerted_at: new Date().toISOString(),

@@ -16,8 +16,52 @@ serve(async (req) => {
   try {
     const body = await req.json();
     const action = body.action as string;
+
+    if (action === "check_domain") {
+      const domain = String(body.domain || "").trim().toLowerCase();
+      if (!domain) throw new Error("domain required");
+      if (domain === "resend.dev") {
+        return new Response(JSON.stringify({ verified: true, status: "verified", testOnly: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const lk = Deno.env.get("LOVABLE_API_KEY");
+      const rk = Deno.env.get("RESEND_API_KEY");
+      if (!lk || !rk) throw new Error("Resend not connected");
+      const r = await fetch("https://connector-gateway.lovable.dev/resend/domains", {
+        headers: { Authorization: `Bearer ${lk}`, "X-Connection-Api-Key": rk },
+      });
+      const j = await r.json().catch(() => ({}));
+      const list = j?.data ?? [];
+      const match = list.find((d: any) => String(d.name).toLowerCase() === domain);
+      return new Response(JSON.stringify({
+        verified: match?.status === "verified",
+        status: match?.status ?? "not_found",
+        domains: list.map((d: any) => ({ name: d.name, status: d.status })),
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const email = String(body.email || "").trim().toLowerCase();
     if (!email || !email.includes("@")) throw new Error("Valid email required");
+
+    if (action === "get_settings") {
+      const { data } = await supabase.from("watchlist_settings").select("*").eq("email", email).maybeSingle();
+      return new Response(JSON.stringify({ settings: data ?? null }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (action === "save_settings") {
+      const from_name = String(body.from_name || "Stock Alerts").slice(0, 100);
+      const from_email = String(body.from_email || "").trim().toLowerCase();
+      if (!from_email.includes("@")) throw new Error("Valid from_email required");
+      const { error } = await supabase.from("watchlist_settings").upsert({
+        email, from_name, from_email, updated_at: new Date().toISOString(),
+      });
+      if (error) throw error;
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (action === "list") {
       const { data, error } = await supabase.from("watchlist_alerts")

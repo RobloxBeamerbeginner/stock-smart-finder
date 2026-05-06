@@ -93,6 +93,16 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    if (action === "toggle") {
+      const symbol = String(body.symbol || "").trim().toUpperCase();
+      const enabled = Boolean(body.enabled);
+      const { error } = await supabase.from("watchlist_alerts")
+        .update({ enabled }).eq("email", email).eq("symbol", symbol);
+      if (error) throw error;
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     throw new Error("Unknown action");
   } catch (e) {
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "err" }), {

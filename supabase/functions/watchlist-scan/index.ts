@@ -80,11 +80,15 @@ serve(async (req) => {
       const movePct = baseline ? ((q.c - baseline) / baseline) * 100 : 0;
       const threshold = Number(a.threshold_pct || 3);
       const triggered = Math.abs(movePct) >= threshold;
+      const dirRule = a.direction ?? "both";
+      const directionOk = dirRule === "both"
+        || (dirRule === "up" && movePct > 0)
+        || (dirRule === "down" && movePct < 0);
 
       // throttle: don't re-alert within 30 min
       const recent = a.last_alerted_at && (Date.now() - new Date(a.last_alerted_at).getTime() < 30 * 60_000);
 
-      if (triggered && !recent) {
+      if (triggered && directionOk && !recent) {
         const dir = movePct >= 0 ? "up" : "down";
         const arrow = movePct >= 0 ? "📈" : "📉";
         const html = `

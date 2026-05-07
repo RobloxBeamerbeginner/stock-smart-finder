@@ -33,6 +33,8 @@ export const Watchlist = () => {
   const [savingSettings, setSavingSettings] = useState(false);
   const [domainStatus, setDomainStatus] = useState<{ verified: boolean; status: string; testOnly?: boolean } | null>(null);
   const [checkingDomain, setCheckingDomain] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
+  const [testResult, setTestResult] = useState<{ delivered: boolean; error?: string; id?: string; to?: string; from?: string } | null>(null);
 
   const checkDomain = useCallback(async (em: string) => {
     const domain = em.split("@")[1]?.toLowerCase();
@@ -71,6 +73,20 @@ export const Watchlist = () => {
     if (error || data?.error) { toast.error(data?.error ?? error?.message); return; }
     toast.success("Sender saved");
     checkDomain(fromEmail);
+  };
+
+  const sendTestEmail = async () => {
+    if (!savedEmail) { toast.error("Save your email first"); return; }
+    setSendingTest(true);
+    setTestResult(null);
+    const { data, error } = await supabase.functions.invoke("watchlist-manage", {
+      body: { action: "send_test", email: savedEmail },
+    });
+    setSendingTest(false);
+    if (error) { setTestResult({ delivered: false, error: error.message }); toast.error(error.message); return; }
+    setTestResult(data);
+    if (data?.delivered) toast.success(`Test email sent to ${savedEmail}`);
+    else toast.error(`Rejected: ${data?.error ?? "unknown error"}`);
   };
 
   const refresh = useCallback(async (em: string) => {
@@ -251,6 +267,25 @@ export const Watchlist = () => {
                   Heads up: <span className="font-mono">resend.dev</span> only delivers to the email you signed up to Resend with. Verify your own domain to send to anyone.
                 </p>
               )}
+              <div className="flex items-center gap-2 pt-1">
+                <button onClick={sendTestEmail} disabled={sendingTest}
+                  className="flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-xs font-semibold hover:bg-secondary disabled:opacity-50">
+                  {sendingTest ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                  Send test email
+                </button>
+                {testResult && (
+                  testResult.delivered ? (
+                    <span className="flex items-center gap-1 text-[11px] text-[hsl(var(--bullish))]">
+                      <CheckCircle2 className="h-3 w-3" /> Delivered to {testResult.to}
+                      {testResult.id && <span className="font-mono opacity-60">· {testResult.id.slice(0,8)}</span>}
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-[11px] text-[hsl(var(--bearish))]">
+                      <AlertTriangle className="h-3 w-3" /> Rejected: {testResult.error}
+                    </span>
+                  )
+                )}
+              </div>
             </div>
           )}
 

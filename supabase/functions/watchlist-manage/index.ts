@@ -63,6 +63,46 @@ serve(async (req) => {
       });
     }
 
+    if (action === "send_test") {
+      const lk = Deno.env.get("LOVABLE_API_KEY");
+      const rk = Deno.env.get("RESEND_API_KEY");
+      if (!lk || !rk) throw new Error("Resend not connected");
+      const { data: settings } = await supabase.from("watchlist_settings")
+        .select("from_name, from_email").eq("email", email).maybeSingle();
+      const from_name = settings?.from_name || "Stock Alerts";
+      const from_email = settings?.from_email || "onboarding@resend.dev";
+      const from = `${from_name} <${from_email}>`;
+      const html = `
+        <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:24px;background:#0f172a;color:#e2e8f0;border-radius:12px">
+          <h2 style="margin:0 0 12px;color:#fff">✅ Test email delivered</h2>
+          <p style="margin:0 0 12px;color:#94a3b8">Your sender configuration is working.</p>
+          <p style="margin:0;color:#cbd5e1"><b>From:</b> <span style="font-family:monospace">${from}</span></p>
+          <p style="margin:6px 0 0;color:#cbd5e1"><b>To:</b> <span style="font-family:monospace">${email}</span></p>
+          <p style="margin-top:20px;font-size:12px;color:#64748b">If you received this, real stock alerts will arrive at this address too.</p>
+        </div>`;
+      const r = await fetch("https://connector-gateway.lovable.dev/resend/emails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${lk}`,
+          "X-Connection-Api-Key": rk,
+        },
+        body: JSON.stringify({ from, to: [email], subject: "✅ Stock Alerts test email", html }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        return new Response(JSON.stringify({
+          delivered: false,
+          status: r.status,
+          error: j?.message || j?.error?.message || j?.name || `HTTP ${r.status}`,
+          from, to: email,
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      return new Response(JSON.stringify({
+        delivered: true, id: j?.id, from, to: email,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     if (action === "list") {
       const { data, error } = await supabase.from("watchlist_alerts")
         .select("*").eq("email", email).order("created_at", { ascending: false });
